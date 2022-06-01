@@ -5,7 +5,8 @@ Version
 -------
 V0.1, 01 Dec 2021, dvk - implement just one plot
 V0.2, 04 Dec 2021, dvk - continue
-
+V0.3, 21 May 2022, MAX - added h_dist and plots to keep track of the obs distance
+V0.4, 21 May 2022, MAX - added variable lum_eff based on initial mass
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -41,13 +42,15 @@ a2a_r = []
 ma_r = []
 mva_r = []
 zda_r = []
+h_dista_r = []
 
 for i, r_object in enumerate(r_objects):
 
     initial_mass_object = 4. / 3 * np.pi * r_object**3 * rho_object  # mass of projectile sphere in kg
-    initial_ballistic_coeff = initial_mass_object / (drag_coeff * np.pi * r_object**2)  # normal formula balistic coef
+    initial_ballistic_coeff = initial_mass_object / (drag_coeff * np.pi * r_object**2)  # normal ballistic coeff wiki
+    lum_eff = 0.213 * initial_mass_object ** (-0.17) # Continuum-flow regime, Kn < 0.01 Drolshagen LUMINOSITY
 
-    ta, sa, ha, ra, va, thetaa, a2a, ma, mva, zda = compute_trajectory(atmo_density, r_planet,
+    ta, sa, ha, ra, va, thetaa, a2a, ma, mva, zda, h_dista = compute_trajectory(atmo_density, r_planet,
                     g0_planet, a, drag_coeff, heat_transfer, heat_of_ablation, lum_eff, v_init,
                     z_init, initial_mass_object, rho_object, h_obs, dt, array_length)
 
@@ -67,6 +70,7 @@ for i, r_object in enumerate(r_objects):
     ma_r.append(ma)
     mva_r.append(mva)
     zda_r.append(zda)
+    h_dista_r.append(h_dista)
 
 final_angles.append(final_angle)
 final_rs.append(final_r)
@@ -116,6 +120,7 @@ def single_plot(col_no, row_no, x_label, y_label, x_data, y_data, \
 # -------------------------------------------------------------------------------------------------
 # plot everything
 # -------------------------------------------------------------------------------------------------
+
 fig, axs = plt.subplots(3, 2, figsize=fig_size, constrained_layout=True)
 fig.set_facecolor("whitesmoke")
 fig.suptitle(f"AllBert EinStein ablation simulation\n$\\rho$ = {rho_object} kg/m$^3$, " + \
@@ -138,46 +143,24 @@ single_plot(2, 0, "time in s", "velocity in km/s", np.array(ta), np.array(va_r) 
 single_plot(2, 1, "height in km", "velocity in km/s", np.array(ha) / 1000, np.array(va_r) / 1000, \
             x_lim=(100, 0))
 
-"""
-plt.grid()
-plt.title(f"$\\rho$ = {rho_object} kg/m$^3$, shape factor = {a}, c$_d$ = {drag_coeff}, " + \
-          f"tau = {lum_eff}\n heat transfer coefficent = {heat_transfer}\n" +
-          f"heat of ablation = {heat_of_ablation} J/kg",
-          fontsize=8)
-plt.xlim([100, 0])
-for i, r_object in enumerate(r_objects):
-    plt.semilogy([x / 1000 for x in ha_r[i]], ma_r[i], label=f"r = {r_object * 100} cm")
-plt.xlabel('height in km')
-plt.ylabel('mass in kg')
-plt.legend()
-plt.show()
-"""
 
-"""
-plt.grid()
-plt.title(f"tau = {lum_eff}")
-plt.ylim([10, -15])
-for i, r_object in enumerate(r_objects):
-    plt.plot(ta_r[i], mva_r[i], label=f"r = {r_object * 100} cm", linestyle=linestyles[i])
-plt.xlabel("time in s")
-plt.ylabel("magnitude")
-plt.legend()
-plt.show()
+fig, axs = plt.subplots(2, 2, figsize=(15, 5), constrained_layout=True)
+fig.set_facecolor("whitesmoke")
+fig.suptitle(f"AllBert EinStein ablation simulation\n$\\rho$ = {rho_object} kg/m$^3$, " + \
+             f"v = {v_init} km/s, $\\alpha$ = {z_init} deg, \n" + \
+             f"tau = {lum_eff}, $c_d$ = {drag_coeff} " + \
+             f"shape factor = {a}, \nheat transfer coeff = {heat_transfer}, heat of ablation =" + \
+             f" {heat_of_ablation} J/kg\n Final masses: {[round(fm, 3) for fm in final_mass]} kg", \
+             fontsize=10)
 
-
-plt.grid()
-plt.title(f"rho = {rho_object} kg/m$^3$, shape factor = {a}, c$_d$ = {drag_coeff}, " + \
-          f"tau = {lum_eff}\n heat transfer coefficent = {heat_transfer}\n" +
-          f"heat of ablation = {heat_of_ablation} J/kg",
-          fontsize=8)
-
-for i, r_object in enumerate(r_objects):
-    plt.semilogy(ta_r[i], ma_r[i], label=f"r = {r_object * 100} cm")
-plt.xlabel('time in s')
-plt.ylabel('mass in kg')
-plt.legend()
-plt.show()
-"""
+single_plot(0, 0, "downrange in km", "height in km", np.array(sa) / 1000, np.array(ha_r) / 1000, \
+            x_lim=(0, np.amax(sa_r)/ 1000+10), y_lim=(0, np.amax(ha_r)/ 1000))
+single_plot(0, 1, "time in s", "height in km", np.array(ta), np.array(ha_r) / 1000, \
+            x_lim=(0, t_max), y_lim=(0, np.amax(ha_r)/ 1000))
+single_plot(1, 0, "time in s", "obs distance in km", np.array(ta), np.array(h_dista_r) / 1000, \
+            x_lim=(0, t_max), y_lim=(0, np.amax(h_dista_r) / 1000))
+single_plot(1, 1, "downrange in km", "obs distance in km", np.array(sa) / 1000, np.array(h_dista_r) / 1000, \
+            x_lim=(0, np.amax(sa_r) / 1000), y_lim=(0, np.amax(h_dista_r) / 1000))
 
 plt.show()
 
