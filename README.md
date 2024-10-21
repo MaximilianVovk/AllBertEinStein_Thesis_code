@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This repository serves as a collection of all the calculations, graphs, and design considerations made during the thesis work, primarily developed using Python.The code is based on freely available libraries.
+This repository serves as a collection of all the calculations, graphs, and design considerations made during the thesis work, developed using MATLAB and Python scripts. All the code is based on freely available libraries.
 
 ## Structure
 
